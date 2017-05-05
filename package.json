@@ -1,0 +1,16 @@
+{
+  "name": "office365",
+  "version": "1.0.0",
+  "description": "office 365 authentication",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mohammad Shahnawaz Alam",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.15.2",
+    "express-session": "^1.15.2",
+    "node-uuid": "^1.4.8"
+  }
+}
