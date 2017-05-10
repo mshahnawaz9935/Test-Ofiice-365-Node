@@ -15,11 +15,11 @@ var uuid = require('node-uuid');
 
 // The application registration (must match Azure AD config)
 var credentials = {
-  authority: 'https://login.microsoftonline.com/common',
+  authority: 'https://login.microsoftonline.com/common',  // My Node.JS App 
   authorize_endpoint: '/oauth2/v2.0/authorize',
   token_endpoint: '/oauth2/v2.0/token',
-  client_id: 'd23a1a63-2516-4822-bbef-ac9fbf1c05fa',
-  client_secret: 'DrqO19XuXbGyHVz3oULCHdX',
+  client_id: 'fa64935f-0786-46d4-9a8d-b9e4b6d66fa9',
+  client_secret: 'inAE7fPtvQBeMM1a6vHxnt9',
   redirect_uri: 'http://localhost:3000/login',
   scope: ['User.Read Mail.Send Mail.ReadWrite Notes.Create offline_access ']
 };
@@ -83,7 +83,7 @@ function getTokenFromRefreshToken(refreshToken, callback) {
     credentials.client_id,
     credentials.client_secret,
     credentials.authority,
-    credentials.authorize_endpoint,
+    credentials.authorize_endpoint, 
     credentials.token_endpoint
   );
 

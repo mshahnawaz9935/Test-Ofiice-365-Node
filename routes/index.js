@@ -2,8 +2,8 @@
 var express = require('express');
 var router = express.Router();
 var authHelper = require('../authHelper.js');
- var requestUtil = require('../requestUtil.js');
  var https = require ('https');
+ var request = require('request');
 
 /* GET home page. */
 router.get('/', function (req, res) {
@@ -11,19 +11,29 @@ router.get('/', function (req, res) {
   if (req.cookies.REFRESH_TOKEN_CACHE_KEY === undefined) {
     res.redirect('login');
   } else {
-      console.log('Logged in');
+      console.log('Logged in' );
        aboutme(req,res);
 
   }
 });
 router.get('/aboutmail', function (req, res) {
-  // check for token
-  me(req,res);
+
+  aboutmail(req,res);
 });
 router.get('/aboutme', function (req, res) {
-  // check for token
+  
   aboutme(req,res);
 });
+
+router.get('/checknote', function (req, res) {
+  // check for token
+  checknote(req,res);
+});
+router.get('/writenote', function (req, res) {
+  // check for token
+  writetonote(req.cookies.ACCESS_TOKEN_CACHE_KEY, 'lava', 'Volcanoes');
+});
+
 
 
 router.get('/disconnect', function (req, res) {
@@ -88,11 +98,17 @@ function aboutme(req,res)
         error = new Error();
         error.code = response.statusCode;
         error.message = response.statusMessage;
+     
         // The error body sometimes includes an empty space
         // before the first character, remove it or it causes an error.
         body = body.trim();
         error.innerError = JSON.parse(body).error;
         console.log(error, null);
+           if(error.code === 401 &&
+      error.innerError.code === 'InvalidAuthenticationToken' ||
+      error.innerError.message === 'Access token has expired.')
+      {     console.log('Disconnect');
+           res.redirect('/disconnect'); }
       }
     });
   }).on('error', function (e) {
@@ -100,11 +116,11 @@ function aboutme(req,res)
   });
 
 }
-function me(req,res)
+function checknote(req,res)
 {
     var options = {
     host: 'graph.microsoft.com',
-    path: 'v1.0/me/notes/',
+    path: '/beta/me/onenote/notebooks?$select=displayName,id',
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -121,7 +137,23 @@ function me(req,res)
     response.on('end', function () {
       var error;
       if (response.statusCode === 200) {
-                res.send(body);
+            console.log(JSON.parse(body).value.length);
+            var data = JSON.parse(body);var t=0;
+            for(var i=0; i< data.value.length; i++)
+            {
+                console.log(data.value[i].displayName);
+                if(data.value[i].displayName == 'TCD Almanac')
+                {
+                 t=1;
+                 req.session.notebookid = data.value[i].id;
+                }
+            }
+                 
+            if(t==1)
+            console.log('notebook exists');
+            else
+            createnotebook(req,res);
+             //  res.json('Creating and Updating notebooks');
         //callback(null, JSON.parse(body));
 
       } else {
@@ -131,8 +163,8 @@ function me(req,res)
         // The error body sometimes includes an empty space
         // before the first character, remove it or it causes an error.
         body = body.trim();
-        error.innerError = JSON.parse(body).error;
-        console.log(error, null);
+     //   error.innerError = JSON.parse(body).error;
+        console.log(body, null);
       }
     });
   }).on('error', function (e) {
@@ -140,6 +172,175 @@ function me(req,res)
   });
 
 }
+function createnotebook(req,res)
+{
+     var options = {
+    url: 'https://graph.microsoft.com/beta/me/onenote/notebooks',
+    method: 'POST',
+    body : JSON.stringify({ "displayName" : "TCD Almanac" }),
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: 'Bearer ' + req.cookies.ACCESS_TOKEN_CACHE_KEY
+    }
+  };
+
+  request(options, function (err, res, body) {
+  if (err) {
+    console.log('Post Error :', err)
+    return
+  }
+  console.log('Post Body :', body)
+
+});
+ setTimeout(function()
+        { 
+ checknote(req,res);
+        },1500);
+  setTimeout(function()
+        {   createsection(req,res);
+        },3000);
+ 
+
+
+}
+function createsection(req,res)
+{
+
+     var url = 'https://graph.microsoft.com/beta/me/onenote/notebooks' + req.session.notebookid + '/sections';
+     console.log('url is ' + url);
+            console.log('notebook id' , req.session.notebookid);
+        var options = {
+        url: 'https://graph.microsoft.com/beta/me/onenote/notebooks/' + req.session.notebookid + '/sections',
+        method: 'POST',
+        body : JSON.stringify({ "displayName" : "Almanac" }),
+        headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: 'Bearer ' + req.cookies.ACCESS_TOKEN_CACHE_KEY
+        }
+    };
+
+    request(options, function (err, res, body) {
+    if (err) {
+        console.log('Post section Error :', err)
+        return
+    }
+    console.log('Post section Body :', body)
+
+    });
+}
+
+
+function writetonote(token,topic,chapter)
+{
+   
+    console.log('inside token' , topic,chapter);
+    var url = '';
+    var queryObject =  {
+    "userID":"IOK_Postman_Testing",
+    "parameters":{
+            "parameterInstance":[
+                {"name":"complexity","value":5},
+                {"name":"duration","value":4}, 
+                {"name":"topic","value":topic},
+                {"name":"chapter","value":chapter}
+            ]
+        }
+    } ;
+    var favourites = {};
+    request({
+        url: "http://kdeg-vm-43.scss.tcd.ie/ALMANAC_Personalised_Composition_Service/composer/atomiccompose",
+        method: "POST",
+        json: true,   // <--Very important!!!
+        body: queryObject,
+        headers: {
+            "content-type": "application/json",  // <--Very important!!!
+        },
+        }, function (error, response, body){
+
+            console.log("post query" + response.body);
+            favourites = response.body;
+            console.log(favourites.sections.section.length);
+            for(var i=0; i< favourites.sections.section.length; i++) 
+            {  
+                    url = url + " <h3>Images from section "+ (i+1) + " are as under</h3>";
+                    url = url + "<h4>" +  favourites.sections.section[i].text.text + "</h4>";
+                    try{
+                        var image_len = favourites.sections.section[i].images.image.length;
+                    }
+                    catch(err)
+                    {    continue;  }
+                    finally { }
+                    for(var j=0; j< image_len;j++)
+                    {
+                    url = url+ "<p><img src=" + "\"" + favourites.sections.section[i].images.image[j].url + "\"" + "/></p>";
+                    }
+                }
+            
+        });
+        
+       
+       //  console.log(htmlPayload); 
+        setTimeout(function()
+        {   
+                var htmlPayload =
+        "<!DOCTYPE html>" +
+        "<html>" +
+        "<head>" +
+        "    <title>"+ favourites.title +"</title>" +
+        "    <meta name=\"created\" content=\"" + dateTimeNowISO() + "\">" +
+        "</head>" +
+        "<body>" +
+        "    <p> View Your Page <i>formatted</i></p>" +
+         url +
+        "</body>" +
+        "</html>";   
+            
+            createPage(token, htmlPayload, false); 
+        }, 1500);
+     
+    }
+
+
+        function dateTimeNowISO() {
+            return new Date().toISOString();
+            }
+
+    function createPage(accessToken, payload, multipart) {
+         createnotebook(req,res);
+            var options = {
+                url: 'https://graph.microsoft.com/beta/me/onenote/'+ req.session.id  +'pages',
+                headers: {
+                'Authorization': 'Bearer ' + accessToken
+                }
+            };
+            console.log('ACCESS TOKEN IS' + accessToken ,' Payload is', payload);
+            // Build simple request
+            if (!multipart) {
+                options.headers['Content-Type'] = 'text/html';
+                options.body = payload;
+            }
+            var r = request.post(options);
+            // Build multi-part request
+            if (multipart) {
+                var CRLF = '\r\n';
+                var form = r.form(); // FormData instance
+                _.each(payload, function(partData, partId) {
+                form.append(partId, partData.body, {
+                    // Use custom multi-part header
+                    header: CRLF +
+                    '--' + form.getBoundary() + CRLF +
+                    'Content-Disposition: form-data; name=\"' + partId + '\"' + CRLF +
+                    'Content-Type: ' + partData.contentType + CRLF + CRLF
+                });
+                });
+            }
+            }
+
+
+
+
 function aboutmail(req,res)
 {
     var options = {
