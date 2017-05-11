@@ -27,7 +27,16 @@ router.get('/aboutme', function (req, res) {
 
 router.get('/checknote', function (req, res) {
   // check for token
-  checknote(req,res);
+  var check = checknote(req,res); 
+  console.log('cjeck '+ check);
+  if(check == 1)
+  res.json('Notebook Exist');
+  // else
+  // {
+  //     createnotebook(req.cookies.ACCESS_TOKEN_CACHE_KEY);
+  //   res.json('Notebook Doesnt Exist, One Created');
+  
+  // }
 });
 router.get('/writenote', function (req, res) {
   // check for token
@@ -139,20 +148,22 @@ function checknote(req,res)
       if (response.statusCode === 200) {
             console.log(JSON.parse(body).value.length);
             var data = JSON.parse(body);var t=0;
+            var notebookid;
             for(var i=0; i< data.value.length; i++)
             {
                 console.log(data.value[i].displayName);
                 if(data.value[i].displayName == 'TCD Almanac')
                 {
+                  console.log('exists ');
                  t=1;
-                 req.session.notebookid = data.value[i].id;
+                 notebookid = data.value[i].id;
                 }
             }
                  
             if(t==1)
-            console.log('notebook exists');
-            else
-            createnotebook(req,res);
+            return 1;
+            else 
+            return 0;
              //  res.json('Creating and Updating notebooks');
         //callback(null, JSON.parse(body));
 
@@ -172,8 +183,9 @@ function checknote(req,res)
   });
 
 }
-function createnotebook(req,res)
+function createnotebook(token)
 {
+  var notebookid;
      var options = {
     url: 'https://graph.microsoft.com/beta/me/onenote/notebooks',
     method: 'POST',
@@ -181,7 +193,7 @@ function createnotebook(req,res)
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      Authorization: 'Bearer ' + req.cookies.ACCESS_TOKEN_CACHE_KEY
+      Authorization: 'Bearer ' + token
     }
   };
 
@@ -190,34 +202,31 @@ function createnotebook(req,res)
     console.log('Post Error :', err)
     return
   }
-  console.log('Post Body :', body)
+  console.log('Succesfully Created notebook :', JSON.parse(body).id);
+  notebookid = JSON.parse(body).id;
 
 });
- setTimeout(function()
-        { 
- checknote(req,res);
-        },1500);
   setTimeout(function()
-        {   createsection(req,res);
-        },3000);
- 
+        {   createsection(token , notebookid);
+        },1500);
+
 
 
 }
-function createsection(req,res)
+function createsection(token, notebookid)
 {
 
-     var url = 'https://graph.microsoft.com/beta/me/onenote/notebooks' + req.session.notebookid + '/sections';
+     var url = 'https://graph.microsoft.com/beta/me/onenote/notebooks/' + notebookid + '/sections';
      console.log('url is ' + url);
-            console.log('notebook id' , req.session.notebookid);
+            console.log('notebook id' , notebookid);
         var options = {
-        url: 'https://graph.microsoft.com/beta/me/onenote/notebooks/' + req.session.notebookid + '/sections',
+        url: 'https://graph.microsoft.com/beta/me/onenote/notebooks/' + notebookid + '/sections',
         method: 'POST',
         body : JSON.stringify({ "displayName" : "Almanac" }),
         headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        Authorization: 'Bearer ' + req.cookies.ACCESS_TOKEN_CACHE_KEY
+        Authorization: 'Bearer ' + token
         }
     };
 
@@ -226,7 +235,7 @@ function createsection(req,res)
         console.log('Post section Error :', err)
         return
     }
-    console.log('Post section Body :', body)
+    console.log('Succesfully Created Section');
 
     });
 }
