@@ -31,25 +31,38 @@ router.get('/aboutme', function (req, res) {
 router.get('/createnotebook', function (req, res) {
 
 
-  // aboutmail(req.cookies.ACCESS_TOKEN_CACHE_KEY ,
-  // function(data){
-  //   res.json(data);
-  // }
-  // );
-  var notebookid = '';
-
-
-  checknote(req.cookies.ACCESS_TOKEN_CACHE_KEY , function(t)
+  checknote(req.cookies.ACCESS_TOKEN_CACHE_KEY , function(t , notebookid)
   {
     if(t==1)
-    res.json('Notebook exists');
-    else {
-      createnotebook(req.cookies.ACCESS_TOKEN_CACHE_KEY ,
-  function(data){
-    res.json('Notebook created and id is' + data);
-  }
-  );
-  }
+    {
+    checksection(req.cookies.ACCESS_TOKEN_CACHE_KEY , notebookid , function(sec, sectionid)
+    {
+       if(sec == 1){
+         createarticle(req.cookies.ACCESS_TOKEN_CACHE_KEY, 'lava', 'Volcanoes');
+       res.json('Notebook exists id is ' + notebookid + 'Section exists id is' + sectionid);
+       }
+       else
+       {
+         createsection(req.cookies.ACCESS_TOKEN_CACHE_KEY, notebookid , function(sectionid)
+         {
+           createarticle(req.cookies.ACCESS_TOKEN_CACHE_KEY, 'lava', 'Volcanoes');
+            res.json('Notebook exists and section created' + sectionid);
+         });
+
+       }
+
+    });
+    }
+    else 
+    {
+      createnotebook(req.cookies.ACCESS_TOKEN_CACHE_KEY ,function(notebookid){
+      createsection(req.cookies.ACCESS_TOKEN_CACHE_KEY, notebookid , function(sectionid)
+         {
+           createarticle(req.cookies.ACCESS_TOKEN_CACHE_KEY, 'lava', 'Volcanoes');
+            res.json('Notebook' + notebookid + 'and section created' + sectionid);
+         });
+         });
+    }
 
 
 
@@ -200,7 +213,7 @@ function aboutme(req,res)
   });
 
 }
-function checksection(token)
+function checksection(token , notebookid , callback)
 {   sec=0;
     var options = {
     host: 'graph.microsoft.com',
@@ -242,7 +255,7 @@ function checksection(token)
               sec=0;
             }
              //  res.json('Creating and Updating notebooks');
-        //callback(null, JSON.parse(body));
+        callback(sec, sectionid);
 
       } else {
         error = new Error();
@@ -302,7 +315,7 @@ function checknote(token , callback)
               t=0;
             }
              //  res.json('Creating and Updating notebooks');
-        callback(t);
+        callback(t , notebookid);
 
       } else {
         error = new Error();
@@ -349,7 +362,7 @@ function createnotebook(token , callback)
 
 
 }
-function createsection(token, notebookid)
+function createsection(token, notebookid ,callback)
 {
 
      var url = 'https://graph.microsoft.com/beta/me/onenote/notebooks/' + notebookid + '/sections';
@@ -373,11 +386,12 @@ function createsection(token, notebookid)
     }
     console.log('Post section Body :', body, JSON.parse(body).id)
     sectionid = JSON.parse(body).id;
+    callback(JSON.parse(body).id);
     });
 }
 
 
-function writespecific(token,topic,chapter)
+function writespecific(token,topic,chapter,callback)
 {
    
     console.log('inside token' , topic,chapter);
@@ -420,18 +434,41 @@ function writespecific(token,topic,chapter)
                     url = url+ "<p><img src=" + "\"" + favourites.sections.section[i].images.image[j].url + "\"" + "/></p>";
                     }
                 }
+                callback(url);
             
         });
         
        
-       //  console.log(htmlPayload); 
-        setTimeout(function()
-        {   
-                var htmlPayload =
+  
+        // setTimeout(function()
+        // {   
+        //         var htmlPayload =
+        // "<!DOCTYPE html>" +
+        // "<html>" +
+        // "<head>" +
+        // "    <title>"+ favourites.title +"</title>" +
+        // "    <meta name=\"created\" content=\"" + dateTimeNowISO() + "\">" +
+        // "</head>" +
+        // "<body>" +
+        // "    <p> View Your Page <i>formatted</i></p>" +
+        //  url +
+        // "</body>" +
+        // "</html>";   
+            
+        //     createNewPage(token, htmlPayload, false); 
+        // }, 1500);
+     
+    }
+
+    function createarticle(token, topic, chapter)
+    {
+      writespecific(token, topic, chapter , function(url)
+      {
+        var htmlPayload =
         "<!DOCTYPE html>" +
         "<html>" +
         "<head>" +
-        "    <title>"+ favourites.title +"</title>" +
+        "    <title>"+ topic +"</title>" +
         "    <meta name=\"created\" content=\"" + dateTimeNowISO() + "\">" +
         "</head>" +
         "<body>" +
@@ -441,9 +478,12 @@ function writespecific(token,topic,chapter)
         "</html>";   
             
             createNewPage(token, htmlPayload, false); 
-        }, 1500);
-     
+
+      });
+       
+
     }
+
 
 
     function createNewPage(accessToken, payload, multipart) {
