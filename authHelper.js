@@ -19,7 +19,7 @@ var credentials = {
   authorize_endpoint: '/oauth2/v2.0/authorize',
   token_endpoint: '/oauth2/v2.0/token',
   client_id: 'fa64935f-0786-46d4-9a8d-b9e4b6d66fa9',
-  client_secret: 'inAE7fPtvQBeMM1a6vHxnt9',
+  client_secret: 'wMiUNne6zxtmmgTjb4CUOJ7',
   redirect_uri: 'http://localhost:3000/login',
   scope: ['User.Read Mail.Send Mail.ReadWrite Notes.Create offline_access ']
 };

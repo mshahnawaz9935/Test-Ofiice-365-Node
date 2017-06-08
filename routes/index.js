@@ -28,6 +28,40 @@ router.get('/aboutme', function (req, res) {
   aboutme(req,res);
 });
 
+router.get('/createnotebook', function (req, res) {
+
+
+  // aboutmail(req.cookies.ACCESS_TOKEN_CACHE_KEY ,
+  // function(data){
+  //   res.json(data);
+  // }
+  // );
+  var notebookid = '';
+
+
+  checknote(req.cookies.ACCESS_TOKEN_CACHE_KEY , function(t)
+  {
+    if(t==1)
+    res.json('Notebook exists');
+    else {
+      createnotebook(req.cookies.ACCESS_TOKEN_CACHE_KEY ,
+  function(data){
+    res.json('Notebook created and id is' + data);
+  }
+  );
+  }
+
+
+
+  });
+
+
+
+
+
+
+});
+
 router.get('/checknote', function (req, res) {
   // check for token
    checknote(req.cookies.ACCESS_TOKEN_CACHE_KEY);
@@ -226,7 +260,7 @@ function checksection(token)
   });
 
 }
-function checknote(token)
+function checknote(token , callback)
 {   t=0;
     var options = {
     host: 'graph.microsoft.com',
@@ -268,7 +302,7 @@ function checknote(token)
               t=0;
             }
              //  res.json('Creating and Updating notebooks');
-        //callback(null, JSON.parse(body));
+        callback(t);
 
       } else {
         error = new Error();
@@ -286,7 +320,7 @@ function checknote(token)
   });
 
 }
-function createnotebook(token)
+function createnotebook(token , callback)
 {
      var options = {
     url: 'https://graph.microsoft.com/beta/me/onenote/notebooks',
@@ -306,10 +340,11 @@ function createnotebook(token)
   }
   console.log('Succesfully Created notebook :', JSON.parse(body).id);
   notebookid =  JSON.parse(body).id;
+  callback(notebookid);
 });
-  setTimeout(function()
-        {   createsection(token , notebookid);
-        },1800);
+  // setTimeout(function()
+  //       {   createsection(token , notebookid);
+  //       },1800);
  
 
 
@@ -550,7 +585,7 @@ function writetonote(token,topic,chapter)
 
 
 
-function aboutmail(req,res)
+function aboutmail(token, callback)
 {
     var options = {
     host: 'graph.microsoft.com',
@@ -559,7 +594,7 @@ function aboutmail(req,res)
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      Authorization: 'Bearer ' + req.cookies.ACCESS_TOKEN_CACHE_KEY
+      Authorization: 'Bearer ' + token
     }
   };
 
@@ -572,8 +607,8 @@ function aboutmail(req,res)
       var error;
       if (response.statusCode === 200) {
                 console.log(JSON.parse(body));
-                res.send(JSON.parse(body));
-     //   callback(null, JSON.parse(body));
+          //      res.send(JSON.parse(body));
+        callback( JSON.parse(body));
 
       } else {
         error = new Error();
